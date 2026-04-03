@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validador e Reparador de CPF</title>
+    
+    <meta name="description" content="Ferramenta gratuita para validar, gerar e reparar dígitos faltantes de CPF de forma segura e offline.">
+    <meta property="og:title" content="Validador e Reparador de CPF">
+    <meta property="og:description" content="Descubra dígitos faltantes e valide CPFs direto do seu navegador, sem envio de dados.">
+    <meta property="og:image" content="./og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630"> 
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
+
+    <style>
+        /* --- VARIÁVEIS DE CORES --- */
+        :root {
+            --bg-body: #f0f2f5;
+            --bg-caixa: #ffffff;
+            --text-main: #333333;
+            --text-muted: #555555;
+            --border-light: #dddddd;
+            --border-input: #cccccc;
+            --bg-input: #ffffff;
+            --bg-help: #e9ecef;
+            --color-link: #888888;
+            --color-link-hover: #333333;
+            
+            --destaque-bg: #ffebee;
+            --destaque-text: #d32f2f;
+            
+            --sucesso-bg: #d4edda;
+            --sucesso-text: #155724;
+            --sucesso-border: #c3e6cb;
+            
+            --erro-bg: #f8d7da;
+            --erro-text: #721c24;
+            --erro-border: #f5c6cb;
+            
+            --btn-bg: #0056b3;
+            --btn-hover: #004494;
+            
+            --loader-bg: #f3f3f3;
+            --loader-color: #0056b3;
+        }
+
+        /* Cores aplicadas quando a classe .dark-mode está no <body> */
+        body.dark-mode {
+            --bg-body: #18191a;
+            --bg-caixa: #242526;
+            --text-main: #e4e6eb;
+            --text-muted: #b0b3b8;
+            --border-light: #3e4042;
+            --border-input: #4a4b4c;
+            --bg-input: #3a3b3c;
+            --bg-help: #3a3b3c;
+            --color-link: #b0b3b8;
+            --color-link-hover: #e4e6eb;
+            
+            --destaque-bg: #4a1c1c;
+            --destaque-text: #ff8a8a;
+            
+            --sucesso-bg: #1e3a23;
+            --sucesso-text: #75b798;
+            --sucesso-border: #285b32;
+            
+            --erro-bg: #4a1a1e;
+            --erro-text: #ea868f;
+            --erro-border: #842029;
+            
+            --btn-bg: #2d88ff;
+            --btn-hover: #1b74e4;
+            
+            --loader-bg: #3a3b3c;
+            --loader-color: #2d88ff;
+        }
+
+        body { font-family: Arial, sans-serif; background-color: var(--bg-body); color: var(--text-main); padding: 20px; transition: background-color 0.3s, color 0.3s; }
+        .caixa { background: var(--bg-caixa); padding: 25px; border-radius: 10px; max-width: 600px; margin: 0 auto; box-shadow: 0 4px 12px rgba(0,0,0,0.15); position: relative; transition: background-color 0.3s; }
+        h1 { margin-top: 0; text-align: center; color: var(--text-main); }
+        
+        /* Botão do Tema */
+        .btn-tema { position: absolute; top: 20px; right: 20px; background: none; border: none; font-size: 22px; cursor: pointer; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s; }
+        .btn-tema:hover { background-color: rgba(128, 128, 128, 0.15); }
+
+        /* Estilos do Help / Instruções */
+        .help-box { background-color: var(--bg-help); padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 14px; color: var(--text-main); transition: background-color 0.3s; }
+        .help-box summary { font-weight: bold; cursor: pointer; color: var(--btn-bg); outline: none; }
+        .help-box ul { margin-top: 10px; padding-left: 20px; margin-bottom: 0; }
+        .help-box li { margin-bottom: 8px; }
+
+        .linha-gerar { display: flex; justify-content: flex-end; margin-bottom: 5px; }
+        .link-gerar { font-size: 13px; color: var(--color-link); text-decoration: none; transition: color 0.2s; font-weight: bold; }
+        .link-gerar:hover { color: var(--color-link-hover); }
+
+        input { padding: 12px; width: calc(100% - 26px); margin-bottom: 15px; font-size: 18px; border: 1px solid var(--border-input); border-radius: 6px; letter-spacing: 1px; background-color: var(--bg-input); color: var(--text-main); transition: background-color 0.3s, color 0.3s, border-color 0.3s; }
+        input::placeholder { color: var(--text-muted); opacity: 0.7; }
+        
+        button#btnProcessar { padding: 12px 20px; font-size: 16px; cursor: pointer; background-color: var(--btn-bg); color: white; border: none; border-radius: 6px; width: 100%; font-weight: bold; transition: 0.2s; }
+        button#btnProcessar:hover { background-color: var(--btn-hover); }
+        button#btnProcessar:disabled { background-color: var(--text-muted); cursor: not-allowed; opacity: 0.6; }
+        
+        #resultado { margin-top: 20px; }
+        .lista-cpfs { max-height: 400px; overflow-y: auto; border: 1px solid var(--border-light); border-radius: 6px; margin-top: 15px; }
+        .item-cpf { padding: 10px 15px; border-bottom: 1px solid var(--border-light); font-family: 'Courier New', monospace; font-size: 18px; display: flex; justify-content: space-between; }
+        .item-cpf:last-child { border-bottom: none; }
+        .destaque { color: var(--destaque-text); font-weight: bold; background-color: var(--destaque-bg); padding: 0 2px; border-radius: 3px; }
+        
+        .msg-sucesso { color: var(--sucesso-text); background-color: var(--sucesso-bg); padding: 15px; border-radius: 6px; font-weight: bold; text-align: center; border: 1px solid var(--sucesso-border); }
+        .msg-erro { color: var(--erro-text); background-color: var(--erro-bg); padding: 15px; border-radius: 6px; font-weight: bold; text-align: center; border: 1px solid var(--erro-border); }
+        .titulo-res { font-size: 16px; color: var(--text-muted); margin-bottom: 10px; }
+
+        /* Estilo do Loading */
+        .loader-container { display: flex; flex-direction: column; align-items: center; padding: 20px; color: var(--text-main); }
+        .loader { border: 4px solid var(--loader-bg); border-top: 4px solid var(--loader-color); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 10px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Estilo das Estatísticas */
+        .estatisticas { font-size: 12px; color: var(--text-muted); text-align: right; margin-top: 15px; padding-top: 10px; border-top: 1px dashed var(--border-light); font-family: monospace; }
+    </style>
+</head>
+<body>
+
+    <div class="caixa">
+        <button id="btnTema" class="btn-tema" title="Alternar Tema Escuro">🌙</button>
+        
+        <h1>Validador e Reparador de CPF</h1>
+        
+        <details class="help-box">
+            <summary>📖 Como usar esta ferramenta?</summary>
+            <ul>
+                <li><strong>Validar:</strong> Digite 11 números. Se você errar 1 dígito, o sistema tentará sugerir o CPF correto.</li>
+                <li><strong>Curingas (?):</strong> Use o símbolo <strong>?</strong> para números que não tem certeza (Ex: <em>123.?56.789-00</em>).</li>
+                <li><strong>Completar:</strong> Digite um CPF incompleto (ex: apenas 8 números) e o sistema testará todas as combinações faltantes.</li>
+                <li><strong>⚠️ Limite de Segurança:</strong> Máximo de <strong>4 números desconhecidos</strong> por consulta para evitar travamentos.</li>
+            </ul>
+        </details>
+        
+        <div class="linha-gerar">
+            <a href="#" id="btnGerarAleatorio" class="link-gerar" title="Gera um CPF válido aleatoriamente">🎲 Gerar</a>
+        </div>
+
+        <input type="text" id="campoCpf" placeholder="Ex: 123.456.789-00 ou 123?56789">
+        <button id="btnProcessar">Analisar CPF</button>
+        
+        <div id="resultado"></div>
+
+        <p style="text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 20px;">
+            🔒 <strong>100% Seguro:</strong> Todo o processamento é feito localmente no seu dispositivo. Nenhum CPF é salvo ou enviado para a internet.
+        </p>
+    </div>
+
+    <script>
+        // --- LÓGICA DO TEMA ESCURO ---
+        const btnTema = document.getElementById('btnTema');
+        const temaSalvo = localStorage.getItem('tema');
+
+        // Verifica a preferência do usuário ou do sistema operacional ao carregar
+        if (temaSalvo === 'dark' || (!temaSalvo && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.body.classList.add('dark-mode');
+            btnTema.innerText = '☀️';
+            btnTema.title = "Alternar Tema Claro";
+        }
+
+        btnTema.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            if (document.body.classList.contains('dark-mode')) {
+                btnTema.innerText = '☀️';
+                btnTema.title = "Alternar Tema Claro";
+                localStorage.setItem('tema', 'dark'); // Salva a preferência
+            } else {
+                btnTema.innerText = '🌙';
+                btnTema.title = "Alternar Tema Escuro";
+                localStorage.setItem('tema', 'light');
+            }
+        });
+
+        // --- FUNÇÕES BASE MATEMÁTICAS ---
+        function validarCpf(cpf) {
+            cpf = cpf.replace(/\D/g, '');
+            if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+            let soma = 0;
+            for (let i = 0; i < 9; i++) soma += cpf[i] * (10 - i);
+            let digito1 = 11 - (soma % 11); if (digito1 > 9) digito1 = 0;
+            if (digito1 !== Number(cpf[9])) return false;
+            soma = 0;
+            for (let i = 0; i < 10; i++) soma += cpf[i] * (11 - i);
+            let digito2 = 11 - (soma % 11); if (digito2 > 9) digito2 = 0;
+            return digito2 === Number(cpf[10]);
+        }
+
+        function gerarCombinacoesCpf(padrao) {
+            let resultados = [];
+            function buscar(str) {
+                let idx = str.indexOf('?');
+                if (idx === -1) { resultados.push({ original: padrao, candidato: str }); return; }
+                for (let i = 0; i < 10; i++) buscar(str.substring(0, idx) + i + str.substring(idx + 1));
+            }
+            buscar(padrao);
+            return resultados;
+        }
+
+        function gerarPosicoesCuringas(str) {
+            const faltam = 11 - str.length;
+            if (faltam <= 0) return [str];
+            const resultados = [];
+            function montar(strAtual, idxBase, curingasRestantes) {
+                if (strAtual.length === 11) { resultados.push(strAtual); return; }
+                if (curingasRestantes > 0) montar(strAtual + '?', idxBase, curingasRestantes - 1);
+                if (idxBase < str.length) montar(strAtual + str[idxBase], idxBase + 1, curingasRestantes);
+            }
+            montar('', 0, faltam);
+            return resultados;
+        }
+
+        function substituirPorCuringas(str, numCuringas) {
+            const resultados = [];
+            const tamanho = str.length;
+            if (numCuringas <= 0) return [str];
+            function gerar(indice, curingasRestantes, strAtual) {
+                if (curingasRestantes === 0) { resultados.push(strAtual + str.substring(indice)); return; }
+                if (tamanho - indice === curingasRestantes) { resultados.push(strAtual + '?'.repeat(curingasRestantes)); return; }
+                gerar(indice + 1, curingasRestantes - 1, strAtual + '?');
+                gerar(indice + 1, curingasRestantes, strAtual + str[indice]);
+            }
+            gerar(0, numCuringas, '');
+            return resultados;
+        }
+
+        function formatarComDestaque(candidato, padrao) {
+            let html = '';
+            for (let i = 0; i < 11; i++) {
+                if (i === 3 || i === 6) html += '.';
+                if (i === 9) html += '-';
+                if (padrao[i] === '?') html += `<span class="destaque">${candidato[i]}</span>`;
+                else html += candidato[i];
+            }
+            return html;
+        }
+
+        function gerarCpfAleatorio() {
+            let numeros = Array.from({length: 9}, () => Math.floor(Math.random() * 10));
+            if (numeros.every(x => x === numeros[0])) numeros[8] = (numeros[8] + 1) % 10;
+            
+            let soma = 0;
+            for (let i = 0; i < 9; i++) soma += numeros[i] * (10 - i);
+            let digito1 = 11 - (soma % 11);
+            numeros.push(digito1 > 9 ? 0 : digito1);
+            
+            soma = 0;
+            for (let i = 0; i < 10; i++) soma += numeros[i] * (11 - i);
+            let digito2 = 11 - (soma % 11);
+            numeros.push(digito2 > 9 ? 0 : digito2);
+            
+            return numeros.join('').replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+        }
+
+        //  LÓGICA DE INTERFACE E REGRAS ---
+        const campoCpf = document.getElementById('campoCpf');
+        const btnProcessar = document.getElementById('btnProcessar');
+        const divResultado = document.getElementById('resultado');
+        const btnGerarAleatorio = document.getElementById('btnGerarAleatorio');
+
+        // Seleciona todo o texto ao clicar no campo de input
+        campoCpf.addEventListener('focus', function() {
+            this.select();
+        });
+
+        btnGerarAleatorio.addEventListener('click', function(evento) {
+            evento.preventDefault(); 
+            campoCpf.value = gerarCpfAleatorio();
+            divResultado.innerHTML = ''; 
+        });
+
+        btnProcessar.addEventListener('click', function() {
+            const entrada = campoCpf.value;
+            const limpo = entrada.replace(/[^0-9?]/g, '');
+            const tamanho = limpo.length;
+
+            divResultado.innerHTML = '';
+            if (tamanho === 0) return;
+
+            if (tamanho > 11) {
+                divResultado.innerHTML = `<div class="msg-erro">Tamanho excedido! Você digitou ${tamanho} caracteres. O máximo é 11.</div>`;
+                return;
+            }
+
+            const numInterrogacoes = (limpo.match(/\?/g) || []).length;
+            const numFaltantes = tamanho < 11 ? (11 - tamanho) : 0;
+            const totalCuringasNaOperacao = numInterrogacoes + numFaltantes;
+
+            if (totalCuringasNaOperacao > 4) {
+                divResultado.innerHTML = `<div class="msg-erro">⚠️ Limite de segurança excedido!<br><br>Faltam ${totalCuringasNaOperacao} números para completar o CPF. O limite máximo permitido na ferramenta é 4.</div>`;
+                return;
+            }
+
+            btnProcessar.disabled = true;
+            divResultado.innerHTML = `
+                <div class="loader-container">
+                    <div class="loader"></div>
+                    <div>Analisando combinações...</div>
+                </div>
+            `;
+
+            setTimeout(() => {
+                const tempoInicio = performance.now();
+                let contadorChecagens = 0;
+
+                const cpfsValidosEncontrados = new Map();
+
+                const processarEFiltrar = (listaDeMoldes) => {
+                    for (let i = 0; i < listaDeMoldes.length; i++) {
+                        let combinacoes = gerarCombinacoesCpf(listaDeMoldes[i]);
+                        for (let j = 0; j < combinacoes.length; j++) {
+                            let item = combinacoes[j];
+                            contadorChecagens++;
+                            
+                            if (validarCpf(item.candidato) && !cpfsValidosEncontrados.has(item.candidato)) {
+                                cpfsValidosEncontrados.set(item.candidato, formatarComDestaque(item.candidato, item.original));
+                            }
+                        }
+                    }
+                };
+
+                let htmlFinal = '';
+
+                // Regras da Aplicação
+                if (tamanho === 11) {
+                    if (!limpo.includes('?')) {
+                        contadorChecagens++;
+                        if (validarCpf(limpo)) {
+                            htmlFinal = `<div class="msg-sucesso">O CPF <strong>${formatarComDestaque(limpo, limpo)}</strong> é perfeitamente válido! ✅</div>`;
+                        } else {
+                            let moldesParaCorrecao = substituirPorCuringas(limpo, 1);
+                            processarEFiltrar(moldesParaCorrecao);
+                            htmlFinal = `<div class="titulo-res">CPF Inválido. Encontramos ${cpfsValidosEncontrados.size} sugestão(ões) de correção alterando apenas 1 dígito:</div>`;
+                        }
+                    } else {
+                        processarEFiltrar([limpo]);
+                        htmlFinal = `<div class="titulo-res">Encontramos ${cpfsValidosEncontrados.size} CPF(s) válido(s) para essa combinação:</div>`;
+                    }
+                } else if (tamanho > 0 && tamanho < 11) {
+                    let moldesIncompletos = gerarPosicoesCuringas(limpo);
+                    processarEFiltrar(moldesIncompletos);
+                    htmlFinal = `<div class="titulo-res">A partir de ${tamanho} dígito(s), encontramos ${cpfsValidosEncontrados.size} CPF(s) válido(s):</div>`;
+                }
+
+                // Montagem da Lista Visual
+                if (cpfsValidosEncontrados.size > 0) {
+                    htmlFinal += '<div class="lista-cpfs">';
+                    cpfsValidosEncontrados.forEach((htmlFormatado) => {
+                        htmlFinal += `<div class="item-cpf"><span>${htmlFormatado}</span> <span>✅</span></div>`;
+                    });
+                    htmlFinal += '</div>';
+                } else if (htmlFinal === '' || cpfsValidosEncontrados.size === 0) {
+                    if(!htmlFinal.includes("perfeitamente válido")) {
+                         htmlFinal = `<div class="msg-erro">Nenhum CPF matematicamente válido foi encontrado com essa base.</div>`;
+                    }
+                }
+
+                const tempoFim = performance.now();
+                const tempoGastoMs = (tempoFim - tempoInicio).toFixed(2);
+
+                if (htmlFinal !== '') {
+                    htmlFinal += `<div class="estatisticas">⏱️ Executado em ${tempoGastoMs}ms | 🔍 ${contadorChecagens} teste(s) realizado(s)</div>`;
+                }
+
+                divResultado.innerHTML = htmlFinal;
+                btnProcessar.disabled = false;
+
+            }, 50);
+        });
+    </script>
+</body>
+</html>
